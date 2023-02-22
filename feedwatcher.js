@@ -44,7 +44,7 @@ export default class FeedWatcher extends EventEmitter {
         return new Promise(async (resolve, reject) => {
             let response = await fetch(this._feed).catch(reject);
 
-            if (response.status !== 200) {
+            if (!response || response.status !== 200) {
                 return reject(new Error('Bad status code'));
             }
 
@@ -56,14 +56,17 @@ export default class FeedWatcher extends EventEmitter {
             });
 
             feedparser.on('error', reject);
+            var items = [];
             feedparser.on('readable', function () {
-                var items = [];
+                var stream = this
                 var item;
                 try {
-                    while ((item = this.read())) {
+                    while (null !== (item = stream.read())) {
                         items.push(item);
                     }
                 } catch (error) {}
+            });
+            feedparser.on('end', () => {
                 resolve(items);
             });
 
